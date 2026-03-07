@@ -1,0 +1,163 @@
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
+import { Chart as ChartJS,
+  LinearScale,
+  TimeScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+import dayjs from "dayjs";
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
+import annotationPlugin from "chartjs-plugin-annotation";
+import { useMemo } from "react";
+import { aggregateMonthly, averageMonthly, checkMissingComponents, getDatasets, type Datasets, type HistoricalData } from "./historicalData";
+
+ChartJS.register(
+  LinearScale,
+  TimeScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  Colors,
+  annotationPlugin,
+);
+
+dayjs.extend(customParseFormat);
+
+
+const RELEVANT_COMPONENTS = [
+    "API Requests",
+    "Actions",
+    //"Codespaces", // Was not available at the beginning of historical data
+    //"Copilot", // Was not available at the beginning of historical data
+    "Git Operations",
+    "Issues",
+    "Packages",
+    "Pages",
+    "Pull Requests",
+    "Webhooks",
+];
+
+const MICROSOFT_ACQUISITION_TS = dayjs("October 26, 2018", "MMMM DD YYYY").toDate().getTime();
+
+
+export const HistoricalInspector = ({ data }: { data: HistoricalData }) => {
+  const { datasets, datasetsAvg } = useMemo(() => {
+    // Aggregate and validate data
+    const monthly = aggregateMonthly(data, RELEVANT_COMPONENTS);
+    const numMissing = checkMissingComponents(monthly.monthlyData, RELEVANT_COMPONENTS);
+
+    if (monthly.numConflict + numMissing > 0) {
+      if (monthly.numConflict > 0) {
+        console.error(`${monthly.numConflict} disagreements about monthly uptimes (indicates a bad scrape)`);
+      }
+
+      if (numMissing > 0) {
+        console.error(`${numMissing} missing components (indicates a bad scrape)`);
+      }
+
+      // TODO: Check gaps between months
+      // TODO: Display to user!
+    }
+
+    // Build actual datasets for graphs
+    const datasets = getDatasets(monthly.monthlyData, RELEVANT_COMPONENTS)
+
+    const averageSeriesName = "Average";
+    const monthlyAvg = averageMonthly(monthly.monthlyData, averageSeriesName);
+    const datasetsAvg = getDatasets(monthlyAvg, [averageSeriesName]);
+
+    return {
+      datasets,
+      datasetsAvg,
+    };
+  }, [data]);
+
+  return (
+    <Tabs defaultActiveKey="average">
+      <Tab eventKey="average" title="Average">
+        <HistoricalGraph title={["Overall Average Uptime by Month", "(Codespaces and Copilot excluded due to launch partway through dataset)"]} datasets={datasetsAvg} />
+      </Tab>
+      <Tab eventKey="breakdown" title="Breakdown">
+        <HistoricalGraph title={["Average Uptime by Month", "(Codespaces and Copilot excluded due to launch partway through dataset)"]} datasets={datasets} legend />
+      </Tab>
+    </Tabs>
+  );
+}
+
+export const HistoricalGraph = ({ title, datasets, legend }: { title: string | string[], datasets: Datasets, legend?: boolean }) => {
+  const deltaY = datasets.maxY - datasets.minY;
+  const yPad = deltaY * 0.1;
+
+  return (
+    <div>
+      <Line
+        data={{
+          datasets: datasets.datasets
+        }}
+        options={{
+          responsive: true,
+          plugins: {
+            legend: {
+              display: !!legend,
+              position: "top" as const
+            },
+            title: {
+              display: true,
+              text: title,
+            },
+            annotation: {
+              annotations: {
+                microslopLine: {
+                  type: "line",
+                  xMin: MICROSOFT_ACQUISITION_TS,
+                  xMax: MICROSOFT_ACQUISITION_TS,
+                  yMin: 0,
+                  yMax: datasets.maxY,
+                  borderColor: "#000000",
+                },
+                microslopText: {
+                  type: "label",
+                  xValue: MICROSOFT_ACQUISITION_TS,
+                  yValue: datasets.maxY,
+                  content: "Microsoft Acquires GitHub",
+                  yAdjust: -14,
+                  font: {
+                    size: 14,
+                  },
+                  padding: 0,
+                },
+              }
+            },
+          },
+          scales: {
+            x: {
+              type: "time",
+              time: {
+                unit: "month"
+              }
+            },
+            y: {
+              min: datasets.minY - yPad,
+              max: datasets.maxY + yPad,
+              ticks: {
+                includeBounds: false,
+                callback: (tickValue) => (
+                  tickValue.toLocaleString(undefined, { style: "percent", minimumFractionDigits: 3 })
+                ),
+              },
+            },
+          },
+        }}
+      />
+    </div>
+  );
+};
