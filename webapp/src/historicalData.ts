@@ -159,7 +159,7 @@ export const getDatasets = (monthlyData: MonthlyData, selectedCompNames: string[
     dps.sort((a, b) => a[0] - b[0]); // Ascending
     datasets.push({
       label: compName,
-      data: dps,
+      data: dps as unknown as Dataset["data"],
     });
   };
 

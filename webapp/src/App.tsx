@@ -18,7 +18,7 @@ export const HistoricalDataCard = () => {
   const { isPending, error, data } = useQuery({
     queryKey: ["chart-main"],
     queryFn: () =>
-      fetch("/historical-data.json").then((res) =>
+      fetch(`${import.meta.env.BASE_URL}historical-data.json`).then((res) =>
         res.json()
       )
   });
