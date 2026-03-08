@@ -2,11 +2,14 @@
 # Extract anonymous response bodies from data.har -> data.json
 # New file has no headers, cookies, etc
 
+import re
 import json
 from glob import glob
 from urllib.parse import urlparse
 
-from config import INPUT_GLOB, DATA_PATH, PATH_FILTER_EXP
+INPUT_GLOB = "input/*.har"
+DATA_PATH = "historical-data.json"
+PATH_FILTER_EXP = re.compile("^/uptime.*$")
 
 
 def main():
