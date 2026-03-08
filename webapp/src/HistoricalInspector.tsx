@@ -69,11 +69,11 @@ export const HistoricalInspector = ({ data }: { data: HistoricalData }) => {
     }
 
     // Build actual datasets for graphs
-    const datasets = getDatasets(monthly.monthlyData, RELEVANT_COMPONENTS)
+    const datasets = getDatasets(monthly.monthlyData, RELEVANT_COMPONENTS, false);
 
     const averageSeriesName = "Average";
     const monthlyAvg = averageMonthly(monthly.monthlyData, averageSeriesName);
-    const datasetsAvg = getDatasets(monthlyAvg, [averageSeriesName]);
+    const datasetsAvg = getDatasets(monthlyAvg, [averageSeriesName], true);
 
     return {
       datasets,
@@ -124,21 +124,10 @@ export const HistoricalGraph = ({ title, datasets, legend }: { title: string | s
                 type: "line",
                 xMin: MICROSOFT_ACQUISITION_TS,
                 xMax: MICROSOFT_ACQUISITION_TS,
-                //yMin: 0,
-                //yMax: datasets.maxY,
                 borderColor: "#000000",
+                borderDash: [7, 7],
               },
               microslopText: {
-                //type: "label",
-                //xValue: MICROSOFT_ACQUISITION_TS,
-                //yValue: datasets.maxY,
-                //content: " < Microsoft Acquires GitHub",
-                //yAdjust: -24,
-                //font: {
-                //  size: 14,
-                //},
-                //padding: 0,
-                //position: "start",
                 type: "label",
                 xValue: MICROSOFT_ACQUISITION_TS,
                 yValue: datasets.minY + deltaY / 2,
@@ -151,6 +140,13 @@ export const HistoricalGraph = ({ title, datasets, legend }: { title: string | s
                 padding: 0,
               },
             }
+          },
+          tooltip: {
+            mode: "index",
+            callbacks: {
+              title: (tooltipItems) => dayjs((tooltipItems[0].raw as [number, number])[0]).format("MMMM YYYY"),
+              label: (tooltipItem) => `${tooltipItem.dataset.label}: ${tooltipItem.parsed.y!.toLocaleString(undefined, { style: "percent", minimumFractionDigits: 5 })}`,
+            },
           },
         },
         scales: {

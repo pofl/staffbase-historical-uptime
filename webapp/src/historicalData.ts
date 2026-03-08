@@ -30,7 +30,9 @@ export type MonthlyData = Record<string, MonthlyEntry>;
 export type MonthlyEntry = {
   month: string,
   year: number,
-  component_uptimes: Record<string, number>
+  componentUptimes: Record<string, number>,
+  minorSeconds: number,
+  majorSeconds: number,
 };
 
 export type Dataset = (ChartData<"line", { key: number, value: number }>)["datasets"][number];
@@ -39,6 +41,11 @@ export type Datasets = {
   minY: number,
   maxY: number,
 };
+
+// Colors from bootstrap
+const COLOR_OK = "#198754";
+const COLOR_MINOR = "#ffc107";
+const COLOR_MAJOR = "#dc3545";
 
 export const aggregateMonthly = (data: HistoricalData, selectedCompNames: string[]): { monthlyData: MonthlyData, numConflict: number } => {
   const monthlyData: MonthlyData = {};
@@ -78,21 +85,28 @@ export const aggregateMonthly = (data: HistoricalData, selectedCompNames: string
         group = {
           month: month.name,
           year: month.year,
-          component_uptimes: {}
+          componentUptimes: {},
+          majorSeconds: 0,
+          minorSeconds: 0,
         }
         monthlyData[groupName] = group;
       }
 
       // Update component uptime entry for the bin
       const uptime = month.uptime_percentage;
-      const existingUptime = group.component_uptimes[compName];
+      const existingUptime = group.componentUptimes[compName];
 
       if (existingUptime !== undefined && existingUptime !== uptime) {
         console.warn(`Conflicting uptime! Month ${groupName} already registered as ${existingUptime}, but was also declared as ${uptime}`);
         numConflict++;
       }
 
-      group.component_uptimes[compName] = uptime;
+      group.componentUptimes[compName] = uptime;
+
+      for (const day of month.days) {
+        group.majorSeconds += day.m ?? 0;
+        group.minorSeconds += day.p ?? 0;
+      }
     }
   };
 
@@ -106,7 +120,7 @@ export const checkMissingComponents = (monthlyData: MonthlyData, selectedCompNam
     const group = monthlyData[groupName];
 
     for (const compName of selectedCompNames) {
-      if (group.component_uptimes[compName] === undefined) {
+      if (group.componentUptimes[compName] === undefined) {
         console.warn(`WARNING: Missing data for ${compName} at ${groupName}`);
         numMissing++;
       }
@@ -121,11 +135,11 @@ export const averageMonthly = (monthlyData: MonthlyData, avgCompName: string): M
 
   for (const groupName in monthlyData) {
     const group = monthlyData[groupName];
-    const compNames = Object.keys(monthlyData[groupName].component_uptimes);
-    const avg = compNames.reduce((sum, compName) => sum + group.component_uptimes[compName], 0) / compNames.length;
+    const compNames = Object.keys(monthlyData[groupName].componentUptimes);
+    const avg = compNames.reduce((sum, compName) => sum + group.componentUptimes[compName], 0) / compNames.length;
     avgMonthlyData[groupName] = {
       ...group,
-      component_uptimes: {
+      componentUptimes: {
         [avgCompName]: avg,
       },
     };
@@ -134,19 +148,32 @@ export const averageMonthly = (monthlyData: MonthlyData, avgCompName: string): M
   return avgMonthlyData;
 };
 
-export const getDatasets = (monthlyData: MonthlyData, selectedCompNames: string[]): Datasets => {
+export const getDatasets = (monthlyData: MonthlyData, selectedCompNames: string[], color: boolean): Datasets => {
   const datasets: Dataset[] = [];
   let minY = 1;
   let maxY = 0;
 
   for (const compName of selectedCompNames) {
-    const dps: [number, number][] = [];
+    const dpData: [number, number, string][] = [];
 
     for (const groupName in monthlyData) {
+      // Get datapoint
       const date = dayjs(groupName, "YYYY:MMMM");
-      const uptime = monthlyData[groupName].component_uptimes[compName];
-      dps.push([date.toDate().getTime(), uptime]);
+      const group = monthlyData[groupName];
+      const uptime = group.componentUptimes[compName];
 
+      // Determine color
+      let color = COLOR_OK;
+
+      if (group.majorSeconds > 0) {
+        color = COLOR_MINOR;
+      } else if (group.minorSeconds > 0) {
+        color = COLOR_MAJOR;
+      }
+
+      dpData.push([date.toDate().getTime(), uptime, color]);
+
+      // Adjust min and max bounds
       if (uptime < minY) {
         minY = uptime;
       }
@@ -156,11 +183,22 @@ export const getDatasets = (monthlyData: MonthlyData, selectedCompNames: string[
       }
     }
 
-    dps.sort((a, b) => a[0] - b[0]); // Ascending
-    datasets.push({
+    dpData.sort((a, b) => a[0] - b[0]); // Ascending
+    const dataset: Dataset = {
       label: compName,
-      data: dps as unknown as Dataset["data"],
-    });
+      data: dpData.map((dp) => [dp[0], dp[1]]) as unknown as Dataset["data"],
+    };
+
+    if (color) {
+      Object.assign(dataset, {
+        pointBackgroundColor: dpData.map((dp) => dp[2]),
+        pointBorderColor: dpData.map((dp) => dp[2]),
+        segment: {
+          borderColor: ctx => dpData[ctx.p1DataIndex][2]
+        }
+      } as Partial<Dataset>);
+    }
+    datasets.push(dataset);
   };
 
   return { datasets, minY, maxY };
