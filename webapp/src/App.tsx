@@ -52,8 +52,9 @@ export const HistoricalDataView = () => {
         </Card>
       </Container>
 
-      <p style={{ textAlign: "center", paddingBottom: "1rem" }}>
-        <i><a href="https://github.com/DaMrNelson/github-historical-uptime" style={{ color: "var(--bs-secondary)" }}>View source</a></i>
+      <p style={{ textAlign: "center", paddingBottom: "1rem", display: "flex", flexDirection: "row", gap: "1rem", justifyContent: "center" }}>
+        <i><a href="https://github.com/pofl/staffbase-historical-uptime" style={{ color: "var(--bs-secondary)" }}>View source</a></i>
+        <i><a href="https://damrnelson.github.io/github-historical-uptime/" style={{ color: "var(--bs-secondary)" }}>View original</a></i>
       </p>
     </>
   );
