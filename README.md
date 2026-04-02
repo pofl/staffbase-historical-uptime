@@ -1,10 +1,14 @@
-# github-uptime-graph
-Generates graphs based on historical GitHub uptime data.
+# staffbase-uptime-graph
+
+A shameless fork of <https://github.com/DaMrNelson/github-historical-uptime>
+
+Generates graphs based on historical Staffbase uptime data.
 
 ## Setup
 
 ### 1. Gathering Data
-1. Navigate to the [GitHub's Uptime History](https://www.githubstatus.com/uptime)
+
+1. Navigate to the [GitHub's Uptime History](https://status.staffbase.com/uptime)
 2. Open the network inspector
 3. Disable caching
 4. Manually click through each option on each page of the network graph. This ended up being quicker than automating a one-time task.
@@ -13,12 +17,14 @@ Generates graphs based on historical GitHub uptime data.
 6. Add HAR file(s) to `input/`
 
 ### 2. Anonymize Data
+
 1. Review `anonymize-data.py` for malicious code (HAR files have cookies)
 2. Install Python3. I ran this on 3.14. No pip packages are needed.
 3. Run `anonymize-data.py`
 4. Delete `input/*.har` for safety
 
 ## Running the Website
+
 Requires NodeJS and NPM (or an alternative).
 
 ```sh

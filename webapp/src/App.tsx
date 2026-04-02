@@ -1,7 +1,7 @@
-import Container from "react-bootstrap/Container";
-import Card from "react-bootstrap/Card";
-import Spinner from "react-bootstrap/Spinner";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import Card from "react-bootstrap/Card";
+import Container from "react-bootstrap/Container";
+import Spinner from "react-bootstrap/Spinner";
 import { HistoricalInspector } from "./HistoricalInspector";
 
 const historicalDataClient = new QueryClient()
@@ -25,9 +25,9 @@ export const HistoricalDataView = () => {
     <>
       <Container className="responsiveGraphHack" style={{ minHeight: "100%", padding: "1rem 0", justifyContent: "flex-start" }}>
         <div style={{ flex: "1 0 auto", textAlign: "center", overflow: "hidden" }}>
-          <h1 className="display-4">GitHub's Historic Uptime</h1>
+          <h1 className="display-4">Staffbase's Historic Uptime</h1>
           <p>
-            All data sourced from the <a target="_blank" href="https://www.githubstatus.com/uptime">official status page</a>.
+            All data sourced from the <a target="_blank" href="https://status.staffbase.com/uptime">official status page</a>.
           </p>
         </div>
 

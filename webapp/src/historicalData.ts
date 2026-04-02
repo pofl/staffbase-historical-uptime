@@ -23,6 +23,8 @@ export type HistoricalDay = {
   events?: unknown[],
   p?: number,
   m?: number,
+  pc?: number,  // Staffbase format for partial/critical
+  mc?: number,  // Staffbase format for major critical
 }
 
 export type MonthlyData = Record<string, MonthlyEntry>;
@@ -63,18 +65,17 @@ export const aggregateMonthly = (data: HistoricalData, selectedCompNames: string
     for (const month of page["months"]) {
       const groupName = `${month.year}:${month.name}`;
 
-      // Filter out incomplete months
-      let incompleteMonth = false;
-
-      for (const day of month["days"]) {
-        if (day.events === undefined) {
-          incompleteMonth = true;
-          break;
-        }
+      // Filter out incomplete months - only if truly missing expected data
+      // Staffbase data doesn't have 'events' field, so only check if days array is truly empty
+      if (month["days"].length === 0) {
+        console.warn(`Skip month ${groupName} with no days`);
+        continue;
       }
 
-      if (incompleteMonth) {
-        console.warn(`Skip month ${groupName} with incomplete data`);
+      // Check if all days are just placeholder/future dates (color #EAEAEA indicates no data)
+      const hasRealData = month["days"].some(day => day.color !== "#EAEAEA");
+      if (!hasRealData) {
+        console.warn(`Skip month ${groupName} with no real data`);
         continue;
       }
 
@@ -104,12 +105,13 @@ export const aggregateMonthly = (data: HistoricalData, selectedCompNames: string
       group.componentUptimes[compName] = uptime;
 
       // Aggregate minor and major outages
+      // Support both GitHub format (p/m) and Staffbase format (pc/mc)
       let minorSeconds = 0;
       let majorSeconds = 0;
 
       for (const day of month.days) {
-        minorSeconds += day.p ?? 0;
-        majorSeconds += day.m ?? 0;
+        minorSeconds += day.p ?? day.pc ?? 0;
+        majorSeconds += day.m ?? day.mc ?? 0;
       }
 
       group.componentMinorSeconds[compName] = minorSeconds;

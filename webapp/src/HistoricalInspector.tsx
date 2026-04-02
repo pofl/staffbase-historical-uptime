@@ -1,23 +1,24 @@
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
-import { Chart as ChartJS,
+import {
+  Chart as ChartJS,
+  Colors,
+  Legend,
   LinearScale,
-  TimeScale,
   LineElement,
   PointElement,
+  TimeScale,
   Title,
   Tooltip,
-  Legend,
-  Colors,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
+import annotationPlugin from "chartjs-plugin-annotation";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
-import "chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm";
-import annotationPlugin from "chartjs-plugin-annotation";
 import { useMemo } from "react";
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
+import { Line } from "react-chartjs-2";
 import { aggregateMonthly, averageMonthly, checkMissingComponents, getDatasets, type Datasets, type HistoricalData } from "./historicalData";
 
 ChartJS.register(
@@ -38,16 +39,7 @@ dayjs.extend(relativeTime);
 
 
 const RELEVANT_COMPONENTS = [
-    "API Requests",
-    "Actions",
-    //"Codespaces", // Was not available at the beginning of historical data
-    //"Copilot", // Was not available at the beginning of historical data
-    "Git Operations",
-    "Issues",
-    "Packages",
-    "Pages",
-    "Pull Requests",
-    "Webhooks",
+    "App, Intranet & Staffbase Email",
 ];
 
 const MICROSOFT_ACQUISITION_TS = dayjs("October 26, 2018", "MMMM DD YYYY").toDate().getTime();
@@ -89,10 +81,10 @@ export const HistoricalInspector = ({ data }: { data: HistoricalData }) => {
     <div className="responsiveGraphHack tabWrapper">
       <Tabs defaultActiveKey="average">
         <Tab eventKey="average" title="Average" className="responsiveGraphHack">
-          <HistoricalGraph title={["GitHub Average Uptime by Month", "(Codespaces and Copilot excluded due to launch partway through dataset)"]} datasets={datasetsAvg} />
+          <HistoricalGraph title={["Staffbase Average Uptime by Month"]} datasets={datasetsAvg} />
         </Tab>
         <Tab eventKey="breakdown" title="Breakdown" className="responsiveGraphHack">
-          <HistoricalGraph title={["GitHub Uptime by Month", "(Codespaces and Copilot excluded due to launch partway through dataset)"]} datasets={datasets} legend />
+          <HistoricalGraph title={["Staffbase Uptime by Month"]} datasets={datasets} legend />
         </Tab>
       </Tabs>
     </div>
